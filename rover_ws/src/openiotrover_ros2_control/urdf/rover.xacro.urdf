@@ -1,0 +1,814 @@
+<?xml version="1.0" ?>
+<robot name="cartpole" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<xacro:include filename="$(find openiotrover_ros2_control)/urdf/materials.xacro" />
+
+    <xacro:property name="two_d_lidar_update_rate" value="30"/>
+    <xacro:property name="two_d_lidar_sample_size" value="361"/>
+    <xacro:property name="two_d_lidar_min_angle" value="0"/>
+    <xacro:property name="two_d_lidar_max_angle" value="360"/>
+    <xacro:property name="two_d_lidar_min_range" value="0.55"/>
+    <xacro:property name="two_d_lidar_max_range" value="16"/>
+	<xacro:property name="camera_baseline" value="0.06"/>
+    <xacro:property name="camera_height" value="0.10"/>
+    <xacro:property name="camera_horizontal_fov" value="60"/>
+	<xacro:property name="chassis_mass" value="70"/>
+    <xacro:property name="chassis_length" value="0.9"/>
+    <xacro:property name="chassis_width" value="0.64"/>
+    <xacro:property name="chassis_height" value="0.19"/>
+    <!-- ........................... 2D LIDAR PLUGIN ................................... -->
+        <gazebo reference="two_d_lidar">
+            <gravity>true</gravity>
+            <sensor type="ray" name="two_d_lidar">
+                <pose>0 0 0 0 0 0</pose>
+                <visualize>false</visualize>
+                <update_rate>${two_d_lidar_update_rate}</update_rate>
+                <ray>
+                    <scan>
+                        <horizontal>
+                            <samples>${two_d_lidar_sample_size}</samples>
+                            <resolution>3.99</resolution>
+                            <min_angle>${radians(two_d_lidar_min_angle)}</min_angle>
+                            <max_angle>${radians(two_d_lidar_max_angle)}</max_angle>
+                        </horizontal>
+                    </scan>
+                    <range>
+                        <min>${two_d_lidar_min_range}</min>
+                        <max>${two_d_lidar_max_range}</max>
+                        <resolution>0.01</resolution>
+                    </range>
+                    <noise>
+                        <type>gaussian</type>
+                        <mean>0.01</mean>
+                        <stddev>0.03</stddev>
+                    </noise>
+                </ray>
+                <plugin name="gazebo_ros_laser" filename="libgazebo_ros_ray_sensor.so">
+                    <ros>
+                        <remapping>~/out:=cartpole/scan</remapping>
+                    </ros>
+                    <output_type>sensor_msgs/LaserScan</output_type>
+                    <frame_name>two_d_lidar</frame_name>
+                </plugin>
+            </sensor>
+        </gazebo>
+
+
+    <!-- ........................... CAMERA PLUGIN ................................... -->
+
+
+        <gazebo reference="kinect_camera">
+            <sensor name="kinect_camera" type="depth">
+                <pose> 0 0 0 0 0 0 </pose>
+                <visualize>true</visualize>
+                <update_rate>10</update_rate>
+                <camera>
+                    <horizontal_fov>1.089</horizontal_fov>
+                    <image>
+                        <format>R8G8B8</format>
+                        <width>640</width>
+                        <height>480</height>
+                    </image>
+                    <clip>
+                        <near>0.05</near>
+                        <far>8.0</far>
+                    </clip>
+                </camera>
+                <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+                    <ros>
+                        <namespace>cartpole</namespace>
+                    </ros>
+                    <frame_name>kinect_camera_optical</frame_name>
+                    <min_depth>0.1</min_depth>
+                    <max_depth>10</max_depth>
+                </plugin>
+            </sensor>
+        </gazebo>
+
+	
+	<!-- .............................   IMU  .................................. -->
+	
+		<gazebo reference="imu_link">
+			<sensor name="imu_link" type="imu">
+					<gravity>true</gravity>
+					<always_on>true</always_on>
+					<update_rate>100</update_rate>
+					<visualize>true</visualize>
+					<topic>__default_topic__</topic>
+					<plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+						<topicName>imu</topicName>
+						<bodyName>imu_link</bodyName>
+						<updateRateHZ>10.0</updateRateHZ>
+						<gaussianNoise>0.0</gaussianNoise>
+						<xyzOffset>0 0 0</xyzOffset>
+						<rpyOffset>0 0 0</rpyOffset>
+						<frameName>imu_link</frameName>
+						<initialOrientationAsReference>false</initialOrientationAsReference>
+					</plugin>
+					<pose>0 0 0 0 0 0</pose>
+			</sensor>
+		</gazebo>
+  
+
+	<link name="dummy_link">
+		<inertial>
+			<origin xyz="0.02364796844941655 0.19000228523251933 0.08132434536111288" rpy="0 0 0"/>
+			<mass value="5.8814666150233066"/>
+			<inertia ixx="0.598394" iyy="0.440362" izz="0.970367" ixy="1.3e-05" iyz="-1.8e-05" ixz="0.00855"/>
+		</inertial>
+	</link>
+
+
+    <joint name="dummy_joint" type="fixed">
+		<parent link="base_link"/>
+		<child link="dummy_link"/>
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  
+  
+<link name="base_link">
+<!--   <inertial>
+    <origin xyz="0.02364796844941655 0.19000228523251933 0.08132434536111288" rpy="0 0 0"/>
+    <mass value="5.8814666150233066"/>
+    <inertia ixx="0.598394" iyy="0.440362" izz="0.970367" ixy="1.3e-05" iyz="-1.8e-05" ixz="0.00855"/>
+  </inertial> -->
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="ua_r_1">
+  <inertial>
+    <origin xyz="-0.056312273606507535 0.012500000000000011 -0.05683715425942088" rpy="0 0 0"/>
+    <mass value="1.3856763050180119"/>
+    <inertia ixx="0.002533" iyy="0.004915" izz="0.002455" ixy="6.5e-05" iyz="7.3e-05" ixz="-0.002113"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.135 -0.385 -0.08" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/ua_r_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.135 -0.385 -0.08" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/ua_r_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="ua_l_1">
+  <inertial>
+    <origin xyz="-0.05631227360650756 -0.012500000000000004 -0.05683715425942091" rpy="0 0 0"/>
+    <mass value="1.3856763050180119"/>
+    <inertia ixx="0.002533" iyy="0.004915" izz="0.002455" ixy="-6.5e-05" iyz="-7.3e-05" ixz="-0.002113"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.135 0.005 -0.08" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/ua_l_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.135 0.005 -0.08" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/ua_l_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="la_r_1">
+  <inertial>
+    <origin xyz="-0.03648706296330445 0.027503265195786664 0.003305898296525188" rpy="0 0 0"/>
+    <mass value="7.463452146998439"/>
+    <inertia ixx="0.045753" iyy="0.13127" izz="0.089068" ixy="-0.002539" iyz="0.002689" ixz="0.054776"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.238744 -0.41 0.035459" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/la_r_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.238744 -0.41 0.035459" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/la_r_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="la_l_1">
+  <inertial>
+    <origin xyz="-0.036487062963304284 -0.027503265195786594 0.0033058982965251116" rpy="0 0 0"/>
+    <mass value="7.4634521469984385"/>
+    <inertia ixx="0.045753" iyy="0.13127" izz="0.089068" ixy="0.002539" iyz="-0.002689" ixz="0.054776"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.238744 0.03 0.035459" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/la_l_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.238744 0.03 0.035459" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/la_l_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="h_fr_1">
+  <inertial>
+    <origin xyz="-4.914075387718597e-07 -0.057608449748317414 -0.07959759073463489" rpy="0 0 0"/>
+    <mass value=".35531737599999995"/>
+    <inertia ixx="0.015919" iyy="0.013355" izz="0.003511" ixy="0.0" iyz="-0.002565" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.449113 -0.435 -0.001626" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_fr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.449113 -0.435 -0.001626" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_fr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="h_fl_1">
+  <inertial>
+    <origin xyz="-4.914075387718597e-07 0.057608449748317414 -0.07959759073463493" rpy="0 0 0"/>
+    <mass value=".35531737599999995"/>
+    <inertia ixx="0.015919" iyy="0.013355" izz="0.003511" ixy="-0.0" iyz="0.002565" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.449113 0.055 -0.001626" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_fl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.449113 0.055 -0.001626" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_fl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="h_rl_1">
+  <inertial>
+    <origin xyz="0.0 0.05229387109065835 -0.11352810754169479" rpy="0 0 0"/>
+    <mass value=".42850952"/>
+    <inertia ixx="0.024881" iyy="0.019987" izz="0.006037" ixy="0.0" iyz="0.006015" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.13 -0.02 -0.05" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_rl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.13 -0.02 -0.05" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_rl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="h_rr_1">
+  <inertial>
+    <origin xyz="0.0 -0.052293871090658584 -0.11352810754169479" rpy="0 0 0"/>
+    <mass value=".42850952"/>
+    <inertia ixx="0.024881" iyy="0.019987" izz="0.006037" ixy="0.0" iyz="-0.006015" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.13 -0.36 -0.05" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_rr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.13 -0.36 -0.05" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/h_rr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wl_fr_1">
+  <inertial>
+    <origin xyz="-4.914075386608374e-07 0.03499999999999981 1.1799224705622002e-07" rpy="0 0 0"/>
+    <mass value=".13983071821495487"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.31 0.20 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.449113 -0.4 0.16627" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wl_fr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wl_fl_1">
+  <inertial>
+    <origin xyz="-4.914075386608374e-07 -0.035 1.1799224705622002e-07" rpy="0 0 0"/>
+    <mass value=".13983071821495487"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.31 0.11 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.449113 0.02 0.16627" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wl_fl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wl_mr_1">
+  <inertial>
+    <origin xyz="-2.79836452954374e-07 0.03500000000000003 -9.357883865024341e-08" rpy="0 0 0"/>
+    <mass value=".1398307182149549"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.305 0.18 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.146317 -0.495 0.16617" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wl_mr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wl_ml_1">
+  <inertial>
+    <origin xyz="-2.79836452954374e-07 -0.03500000000000002 -9.357883865024341e-08" rpy="0 0 0"/>
+    <mass value=".1398307182149549"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.305 0.13 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.146317 0.115 0.16617" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wl_ml_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wl_rr_1">
+  <inertial>
+    <origin xyz="-2.7755575615628914e-17 0.034999999999999976 -2.7755575615628914e-17" rpy="0 0 0"/>
+    <mass value=".1398307182149549"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.305 0.19 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.13 -0.325 0.16617" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wl_rr_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="wh_rl_1">
+  <inertial>
+    <origin xyz="-2.7755575615628914e-17 -0.034999999999999046 -2.7755575615628914e-17" rpy="0 0 0"/>
+    <mass value=".1398307182149549"/>
+    <inertia ixx="0.034025" iyy="0.056631" izz="0.034025" ixy="-0.0" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.305 0.12 0.17" rpy="0 0 -1.57"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/visual/wheel.stl" scale="0.0012 0.0012 0.0012"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.13 -0.055 0.16617" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/wh_rl_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+
+<link name="Rplidar_base_1">
+  <inertial>
+    <origin xyz="-1.3877787807814457e-17 -0.057050397260989816 0.006703640372872827" rpy="0 0 0"/>
+    <mass value="0.06381980393848316"/>
+    <inertia ixx="0.000732" iyy="0.000223" izz="0.000889" ixy="-0.0" iyz="-1.1e-05" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.07 -0.244 -0.215" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/Rplidar_base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.07 -0.244 -0.215" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/Rplidar_base_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+
+<link name="dummy_rplidar_base">
+  <inertial>
+    <origin xyz="-1.3877787807814457e-17 -0.057050397260989816 0.006703640372872827" rpy="0 0 0"/>
+    <mass value="0.06381980393848316"/>
+    <inertia ixx="0.000732" iyy="0.000223" izz="0.000889" ixy="-0.0" iyz="-1.1e-05" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0.05 0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/base_rplidar.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0.05 0.0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/base_rplidar.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+
+<link name="two_d_lidar">
+  <inertial>
+    <origin xyz="0.00025701043800531453 -0.000934161396051264 0.019085242132221847" rpy="0 0 0"/>
+    <mass value="0.12800643007904988"/>
+    <inertia ixx="0.000598" iyy="0.000598" izz="0.000847" ixy="-0.0" iyz="1.5e-05" ixz="-4e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.07 -0.1895 -0.23" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/rplidar_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.07 -0.1895 -0.23" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="$(find openiotrover_ros2_control)/meshes/rplidar_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+
+<link name="kinect_camera">
+	<collision>
+		<origin xyz="0 0 0" rpy="0 0 -1.57" />
+		<geometry>
+			<box size="0.07 0.3 0.09"/>
+		</geometry>
+	</collision>
+
+	<visual>
+		<origin xyz="0 0 0" rpy="0 0 -1.57" />
+		<geometry>
+			<mesh filename="$(find openiotrover_ros2_control)/meshes/ZEDM.stl" scale="0.001 0.001 0.001"/>
+		</geometry>
+	</visual>
+	<inertial>
+		<origin xyz="0.00025701043800531453 -0.000934161396051264 0.019085242132221847" rpy="0 0 0"/>
+		<mass value="0.12800643007904988"/>
+		<inertia ixx="0.000598" iyy="0.000598" izz="0.000847" ixy="-0.0" iyz="1.5e-05" ixz="-4e-06"/>
+	</inertial>
+</link>
+
+
+<link name="imu_link">
+	<collision>
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<geometry>
+			<box size="0.07 0.3 0.09"/>
+		</geometry>
+	</collision>
+
+	<visual>
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<geometry>
+			<mesh filename="$(find openiotrover_ros2_control)/meshes/ZEDM.stl" scale="0.001 0.001 0.001"/>
+		</geometry>
+	</visual>
+	<inertial>
+		<origin xyz="0.00025701043800531453 -0.000934161396051264 0.019085242132221847" rpy="0 0 0"/>
+		<mass value="0.12800643007904988"/>
+		<inertia ixx="0.000598" iyy="0.000598" izz="0.000847" ixy="-0.0" iyz="1.5e-05" ixz="-4e-06"/>
+	</inertial>
+</link>
+
+<joint name="stereo_camera_joint" type="fixed">
+	<origin rpy="3.14 3.14 0" xyz="-.09 .19 .17"/>
+	<parent link="base_link"/>
+	<child link="kinect_camera"/>
+</joint>
+		
+<joint name="IMU_joint" type="fixed">
+	<origin rpy="0 0 0" xyz="0 0 0"/>
+	<parent link="base_link"/>
+	<child link="imu_link"/>
+</joint>		
+		
+
+<joint name="base_link_to_ua_r_1" type="fixed">
+  <origin xyz="-0.135 0.385 0.08" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="ua_r_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="base_link_to_ua_l_1" type="fixed">
+  <origin xyz="-0.135 -0.005 0.08" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="ua_l_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="ua_r_1_to_la_r_1" type="revolute">
+  <origin xyz="-0.103744 0.025 -0.115459" rpy="0 0 0"/>
+  <parent link="ua_r_1"/>
+  <child link="la_r_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+   <limit effort="0" lower="-.5" upper=".5" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="ua_l_1_to_la_l_1" type="revolute">
+  <origin xyz="-0.103744 -0.025 -0.115459" rpy="0 0 0"/>
+  <parent link="ua_l_1"/>
+  <child link="la_l_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+   <limit effort="0" lower="-.5" upper=".5" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="la_r_1_to_hand_fr_1" type="revolute">
+  <origin xyz="-0.210369 0.025 0.037085" rpy="0 0 0"/>
+  <parent link="la_r_1"/>
+  <child link="h_fr_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+  <limit effort="0" lower="-1.57" upper="1.57" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="la_l_1_to_h_fl_1" type="revolute">
+  <origin xyz="-0.210369 -0.025 0.037085" rpy="0 0 0"/>
+  <parent link="la_l_1"/>
+  <child link="h_fl_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+  <limit effort="0" lower="-1.57" upper="1.57" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="base_link_to_h_rl_1" type="revolute">
+  <origin xyz="0.13 0.02 0.05" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="h_rl_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+  <limit effort="0" lower="-1.57" upper="1.57" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="base_link_to_h_rr_1" type="revolute">
+  <origin xyz="0.13 0.36 0.05" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="h_rr_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+  <limit effort="0" lower="-1.57" upper="1.57" velocity="1"/>
+  <dynamics damping="0" friction="0"/>
+</joint>
+
+<joint name="hand_fr_1_to_wl_fr_1" type="continuous">
+  <origin xyz="0.0 -0.035 -0.167896" rpy="0 0 0"/>
+  <parent link="h_fr_1"/>
+  <child link="wl_fr_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="h_fl_1_to_wl_fl_1" type="continuous">
+  <origin xyz="0.0 0.035 -0.167896" rpy="0 0 0"/>
+  <parent link="h_fl_1"/>
+  <child link="wl_fl_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="la_r_1_to_wl_mr_1" type="continuous">
+  <origin xyz="0.092427 0.085 -0.130711" rpy="0 0 0"/>
+  <parent link="la_r_1"/>
+  <child link="wl_mr_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="la_l_1_to_wl_ml_1" type="continuous">
+  <origin xyz="0.092427 -0.085 -0.130711" rpy="0 0 0"/>
+  <parent link="la_l_1"/>
+  <child link="wl_ml_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="h_rr_1_to_wl_rr_1" type="continuous">
+  <origin xyz="0.0 -0.035 -0.21617" rpy="0 0 0"/>
+  <parent link="h_rr_1"/>
+  <child link="wl_rr_1"/>
+  <axis xyz="0.0 1.0 0.0"/>
+</joint>
+
+<joint name="h_rl_1_to_wh_rl_1" type="continuous">
+  <origin xyz="0.0 0.035 -0.21617" rpy="0 0 0"/>
+  <parent link="h_rl_1"/>
+  <child link="wh_rl_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+
+
+<joint name="dumy_base_to_Rplidar_base_1" type="continuous">
+  <origin xyz="-0.07 0.3 0.215" rpy="0 0 0"/>
+  <parent link="dummy_rplidar_base"/>
+  <child link="Rplidar_base_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="Rplidar_base_to_rplidar" type="fixed">
+  <origin xyz="0.0 -0.0545 0.015" rpy="0 0 1.57"/>
+  <parent link="Rplidar_base_1"/>
+  <child link="two_d_lidar"/>
+</joint>
+
+
+
+
+<joint name="base_link_to_dummy_rplidar_base" type="revolute">
+  <origin xyz="0.0 -0.0545 0.015" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="dummy_rplidar_base"/>
+  <axis xyz="0 0 1"/>
+  <limit lower="0" upper="0" effort="100" velocity="3.14"/>
+</joint>
+
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+    <joint name="la_r_1_to_hand_fr_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="la_l_1_to_h_fl_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="hand_fr_1_to_wl_fr_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="h_fl_1_to_wl_fl_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="la_r_1_to_wl_mr_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="la_l_1_to_wl_ml_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+	<joint name="base_link_to_h_rr_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>	
+	<joint name="base_link_to_h_rl_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>	
+	<joint name="h_rr_1_to_wl_rr_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>	
+	<joint name="h_rl_1_to_wh_rl_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+	<joint name="dumy_base_to_Rplidar_base_1">
+      <command_interface name="velocity">
+        <param name="min">-10</param>
+        <param name="max">10</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find openiotrover_ros2_control)/config/rover_controller_velocity.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

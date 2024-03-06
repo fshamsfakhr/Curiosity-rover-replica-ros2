@@ -1,0 +1,28 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 1000  # Hz
+
+    velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    imu_sensor_broadcaster:
+      type: imu_sensor_broadcaster/IMUSensorBroadcaster
+
+velocity_controller:
+  ros__parameters:
+    joints:
+      - hand_fr_1_to_wl_fr_1
+      - h_fl_1_to_wl_fl_1
+      - la_r_1_to_wl_mr_1
+      - la_l_1_to_wl_ml_1
+      - h_rr_1_to_wl_rr_1
+      - h_rl_1_to_wh_rl_1
+      - la_r_1_to_hand_fr_1
+      - la_l_1_to_h_fl_1   
+      - base_link_to_h_rr_1
+      - base_link_to_h_rl_1
+      - dumy_base_to_Rplidar_base_1 
+
