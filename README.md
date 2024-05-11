@@ -8,5 +8,5 @@ This package is a part of the ros2_control framework. For more, please check the
 ## Build status
 | ROS2 Distro | Branch  | Build status      | Documentation | Released packages |
 |-------------|---------|-------------------|---------------|-------------------|
-| Humble      | humble  | [Humble Semi-Binary Build](link_to_build_status) | [Documentation](link_to_documentation) | [Released packages](link_to_released_packages) |
+| Humble      | humble  | [Humble Semi-Binary Build](link_to_build_status) | [Documentation](https://control.ros.org/humble/index.html) | [Released packages](link_to_released_packages) |
 
